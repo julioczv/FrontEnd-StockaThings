@@ -30,19 +30,6 @@ body { margin: 0; }
   --primary-100: #147865;
   --primary-050: #1FA287;
 
-  /*Cores secundárias*/
-  --secondarycolor: #F5F6F6;
-  --backgroundCalendar: #FFFFFF;
-  --backgroundActions: #FEFEFE;
-  --footerAction: #EAEBF0;
-
-  /*Cores agendamentos*/
-  --dentroPrazo: #2e7d32;
-  --agendamentoDia: #ef6c00;
-
-  /*Cores de botoes*/
-  --savebutton: #22c55e;
-
   /*Barra de scrollagem*/
   --scrollbar-size: 10px;
   --scrollbar-track: rgba(0,0,0,.06);
