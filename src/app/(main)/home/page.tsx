@@ -1,33 +1,39 @@
 'use client';
 
 import * as React from 'react';
-import styled, {ThemeProvider} from 'styled-components';
-import dynamic from 'next/dynamic';
+import {ThemeProvider} from 'styled-components';
 import {
-    Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Typography, TablePagination, IconButton,
-    Stack, TextField, Autocomplete,
-    InputAdornment,
-    DialogTitle, Drawer, Toolbar, Button, Avatar
+    Box, Table, TableBody, TableCell, TableHead, TableRow,
+    Typography, TablePagination, IconButton, TextField,
+    InputAdornment, Toolbar, useMediaQuery,
+    Button, Autocomplete, Stack,
+    Grid
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {useState} from "react";
 import {rowsDemo} from "@/app/labels/navbarmodels";
-import {Close, Search, SupportAgentOutlined} from '@mui/icons-material';
+import {Close, Search} from '@mui/icons-material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import {StyledTableContainer, HeaderBar, HeaderInner, Bold, DrawerSales, BoxInput} from "./style";
-import ButtonProp from "@/app/components/buttons/buttonprop";
-import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
+import {StyledTableContainer, DrawerSales, BoxInput, AddProduct, NewProductDialog} from "./style";
 import {theme} from '@/app/globalsmui';
+import ButtonProp from "@/app/components/buttons/buttonprop";
+
+const unidMedida = ["Unidade", "Ml", "Pacote"]
+const categoria = ["Insumo", "Venda", "Teste"]
 
 const Home = () => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10)
     const [open, setOpen] = useState(false);
+    const [openNewProduct, setOpenNewProduct] = useState(false);
+    const isMobile = useMediaQuery('(max-width:600px)', {noSsr: true});
 
     const toggleDrawer = (newOpen: boolean) => () => {
         setOpen(newOpen);
     };
+
+    const handleOpenNewProduct = () => setOpenNewProduct(true);
+    const handleCloseNewProduct = () => setOpenNewProduct(false);
 
 
     const handleChangePage = (_event: unknown, newPage: number) => {
@@ -41,19 +47,7 @@ const Home = () => {
 
     return (
         <ThemeProvider theme={theme}>
-            <Box>
-                <HeaderBar>
-                    <Toolbar disableGutters sx={{padding: '0 !important'}}>
-                        <HeaderInner maxWidth={false}>
-                            <Typography variant="h6"><Bold>GESTOR</Bold> Stocka</Typography>
-                            <Box display="flex" justifyContent="flex-end" alignItems="center" gap={1}>
-                                <IconButton onClick={toggleDrawer(true)}>
-                                    <AddShoppingCartIcon sx={{color: 'var(--primarycolor)'}} fontSize='large'/>
-                                </IconButton>
-                            </Box>
-                        </HeaderInner>
-                    </Toolbar>
-                </HeaderBar>
+            <Box sx={{overflowY: 'hidden', maxHeight: '100dvh'}}>
                 <Box p='24px 0'>
                     <BoxInput>
                         <TextField
@@ -75,17 +69,29 @@ const Home = () => {
                                 }
                             }}
                         />
+                        {isMobile ? (
+                            <Box>
+                                <AddProduct>
+                                    <AddIcon/>
+                                </AddProduct>
+                            </Box>
+                        ) : (
+                            <Box>
+                                <ButtonProp label='Adicionar Produto' startIcon={<AddIcon/>}
+                                            onClick={handleOpenNewProduct}/>
+                            </Box>
+                        )}
                     </BoxInput>
                 </Box>
                 <StyledTableContainer>
                     <Table stickyHeader>
                         <TableHead>
                             <TableRow>
-                                <TableCell>Código Produto</TableCell>
+                                <TableCell>Código</TableCell>
                                 <TableCell>Produto</TableCell>
-                                <TableCell>Valor de Custo</TableCell>
-                                <TableCell sx={{width: '190px'}}>Valor de Venda</TableCell>
-                                <TableCell sx={{width: '130px'}}>Quantidade</TableCell>
+                                <TableCell sx={{width: '160px'}} align='center'>Valor de Custo</TableCell>
+                                <TableCell align='center'>Valor de Venda</TableCell>
+                                <TableCell align='center'>Quantidade</TableCell>
                                 <TableCell align='center' sx={{width: '100px'}}>Ações</TableCell>
                             </TableRow>
                         </TableHead>
@@ -94,19 +100,25 @@ const Home = () => {
                                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                 .map((item) => (
                                     <TableRow key={item.id}>
-                                        <TableCell>{item.id}</TableCell>
-                                        <TableCell>{item.nomeproduto}</TableCell>
-                                        <TableCell sx={{maxWidth: '300px'}}>{item.valorpago}</TableCell>
-                                        <TableCell>{item.valorvenda}</TableCell>
-                                        <TableCell align='center'
-                                                   sx={{width: '10px !important'}}>{item.quantidade}</TableCell>
-                                        <TableCell sx={{display: 'flex'}} align='left'>
-                                            <IconButton>
-                                                <AddIcon/>
-                                            </IconButton>
-                                            <IconButton>
-                                                <VisibilityOutlinedIcon/>
-                                            </IconButton>
+                                        <TableCell data-label="Código:">{item.id}</TableCell>
+                                        <TableCell data-label="Produto:">{item.nomeproduto}</TableCell>
+                                        <TableCell data-label="Valor de Custo:" align='center'>
+                                            R$ {item.valorpago}
+                                        </TableCell>
+                                        <TableCell data-label="Valor de Venda:"
+                                                   align="center">R$ {item.valorvenda}</TableCell>
+                                        <TableCell data-label="Quantidade:" align="center">
+                                            {item.quantidade}
+                                        </TableCell>
+                                        <TableCell data-label="Ações" className="cell-actions" align="left">
+                                            <Box>
+                                                <IconButton sx={{color: 'var(--primarycolor)'}}>
+                                                    <AddIcon/>
+                                                </IconButton>
+                                                <IconButton sx={{color: 'var(--primarycolor)'}}>
+                                                    <VisibilityOutlinedIcon/>
+                                                </IconButton>
+                                            </Box>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -124,6 +136,7 @@ const Home = () => {
                         labelRowsPerPage="Itens por página"
                     />
                 </StyledTableContainer>
+
                 <DrawerSales anchor="right" open={open} onClose={toggleDrawer(false)}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                         <Typography variant="h6">Novo Produto</Typography>
@@ -132,6 +145,66 @@ const Home = () => {
                         </IconButton>
                     </Box>
                 </DrawerSales>
+                <NewProductDialog open={openNewProduct} onClose={handleCloseNewProduct}>
+                    <Stack direction='row' justifyContent='space-between' pb='24px'>
+                        <Typography variant='h6'>Adicionar Produto</Typography>
+                        <IconButton onClick={handleCloseNewProduct}>
+                            <Close/>
+                        </IconButton>
+                    </Stack>
+                    <Grid container spacing={2}>
+                        <Grid size={12}>
+                            <TextField
+                                label='Nome do Produto'
+                                fullWidth
+                            />
+                        </Grid>
+                        <Grid size={12}>
+                            <TextField
+                                label='Descrição (Opcional)'
+                                multiline
+                                fullWidth
+                                rows={5}
+                            />
+                        </Grid>
+                        <Grid size={4}>
+                            <TextField
+                                type='number'
+                                label='Valor de Custo'
+                            />
+                        </Grid>
+                        <Grid size={4}>
+                            <TextField
+                                type='number'
+                                label='Valor de Venda'
+                            />
+                        </Grid>
+                        <Grid size={4}>
+                            <TextField
+                                type='number'
+                                label='Quantidade'
+                            />
+                        </Grid>
+                        <Autocomplete
+                            options={unidMedida}
+                            fullWidth={true}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Unidade de Medida"/>
+                            )}
+                        />
+                        <Autocomplete
+                            options={categoria}
+                            fullWidth={true}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Categoria"/>
+                            )}
+                        />
+                    </Grid>
+
+                    <Stack direction='row' justifyContent='end' pt={2}>
+                        <ButtonProp label='Adicionar Produto' startIcon={<AddIcon/>} color='var(--savebutton)'/>
+                    </Stack>
+                </NewProductDialog>
             </Box>
         </ThemeProvider>
     );
