@@ -13,11 +13,13 @@ body{
   overflow-y: auto;
   margin: 0 !important;
   padding: 0 !important;
-  background: var(--secondarycolor) !important;
+  background-color: black;
 }
 
-html {
-  background: var(--secondarycolor) !important;
+html, body {
+  margin: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 html, body, #__next { min-height: 100%; }

@@ -324,7 +324,7 @@ export const NAV: NavItem[] = [
     },
 ];
 
-type Row = {
+export type Row = {
     id: number;
     nomeproduto: string;
     valorpago: number;

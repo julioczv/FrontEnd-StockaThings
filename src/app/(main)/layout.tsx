@@ -11,12 +11,15 @@ import {
 } from '@mui/material';
 
 import "../globals.css"
-import { usePathname } from 'next/navigation';
+import {usePathname} from 'next/navigation';
 import {NAV} from "../labels/navbarmodels";
-import { ChevronRight } from "@mui/icons-material";
+import {ChevronRight} from "@mui/icons-material";
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import {useState} from "react";
 import {Bold} from "@/app/(main)/home/style";
+import {CartIcon} from "@/app/cart/CartIcon";
+import {CartProvider} from "@/app/cart/CartProvider";
+
 
 type NavLeaf = { key: string; label: string; icon: React.ReactNode; href: string };
 type NavGroup = { key: string; label: string; icon: React.ReactNode; children: NavItem[] };
@@ -48,7 +51,9 @@ const HeaderInner = styled(Container)`
     gap: 12px;
     padding: 0;
 
-    @media (max-width: 900px) { gap: 10px; }
+    @media (max-width: 900px) {
+        gap: 10px;
+    }
 
 `;
 
@@ -169,7 +174,7 @@ const hidePillWhenClosed = {
 export default function RootLayout({children}: { children: React.ReactNode }) {
     const [open, setOpen] = React.useState(true);
     const toggleSidebar = () => setOpen(v => !v);
-    const isMobile = useMediaQuery('(max-width:800px)', {noSsr: true});
+    const isMobile = useMediaQuery('(max-width:799px)', {noSsr: true});
     const [mobileOpen, setMobileOpen] = useState(false);
 
     React.useEffect(() => {
@@ -292,69 +297,70 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         <html lang="pt-BR">
         <body>
         <Root>
+            <CartProvider>
 
-            <Sidebar $open={open}>
-                <BoxImage $open={open}>
-                    {open ? (
-                        <img src="/images/Logo.png" alt="logo" width={160} height={50} onClick={toggleSidebar}/>
-                    ) : (
-                        <img src="/images/Logotipo.png" alt="logo" width={40} height={30} onClick={toggleSidebar}/>
-                    )}
-                </BoxImage>
-                <Divider/>
+                <Sidebar $open={open}>
+                    <BoxImage $open={open}>
+                        {open ? (
+                            <img src="/images/Logo.png" alt="logo" width={160} height={50} onClick={toggleSidebar}/>
+                        ) : (
+                            <img src="/images/Logotipo.png" alt="logo" width={40} height={30} onClick={toggleSidebar}/>
+                        )}
+                    </BoxImage>
+                    <Divider/>
 
-                <List sx={{px: 1, pt: 1}}>
-                    {NAV.map(item => renderItem(item))}
-                </List>
+                    <List sx={{px: 1, pt: 1}}>
+                        {NAV.map(item => renderItem(item))}
+                    </List>
 
-                <Box flexGrow={1}/>
-                <Divider/>
-                <Box p={2} display="flex" alignItems="center" gap={1}>
-                    <Avatar sx={{width: 36, height: 36}}>N</Avatar>
-                    {open && (
-                        <Box>
-                            <Box sx={{fontWeight: 600, fontSize: 14}}>Usuário</Box>
-                            <Box sx={{color: 'text.secondary', fontSize: 12}}>email@exemplo.com</Box>
-                        </Box>
-                    )}
-                </Box>
-            </Sidebar>
-            <BoxArea $open={open}>
-                <Shell>
-                    <HeaderBar>
-                        <Toolbar disableGutters sx={{padding: '0 !important'}}>
-                            <HeaderInner maxWidth={false}>
-                                {isMobile ? (
-                                    <Box sx={{display: 'flex', alignItems: 'center', pl: '24px'}}>
-                                        <IconButton onClick={toggleSidebar}>
-                                            <img
-                                                src="/images/Logotipo.png"
-                                                alt="Drixx"
-                                                height={45}
-                                                style={{display: 'block'}}
-                                            />
-                                        </IconButton>
+                    <Box flexGrow={1}/>
+                    <Divider/>
+                    <Box p={2} display="flex" alignItems="center" gap={1}>
+                        <Avatar sx={{width: 36, height: 36}}>N</Avatar>
+                        {open && (
+                            <Box>
+                                <Box sx={{fontWeight: 600, fontSize: 14}}>Usuário</Box>
+                                <Box sx={{color: 'text.secondary', fontSize: 12}}>email@exemplo.com</Box>
+                            </Box>
+                        )}
+                    </Box>
+                </Sidebar>
+                <BoxArea $open={open}>
+                    <Shell>
+                        <HeaderBar>
+                            <Toolbar disableGutters sx={{padding: '0 !important'}}>
+                                <HeaderInner maxWidth={false}>
+                                    {isMobile ? (
+                                        <Box sx={{display: 'flex', alignItems: 'center', pl: '24px'}}>
+                                            <IconButton onClick={toggleSidebar}>
+                                                <img
+                                                    src="/images/Logotipo.png"
+                                                    alt="Drixx"
+                                                    height={45}
+                                                    style={{display: 'block'}}
+                                                />
+                                            </IconButton>
+                                        </Box>
+                                    ) : (
+                                        <Box pl='24px'>
+                                            <Typography variant="h6"><Bold>GESTOR</Bold> S.G.I</Typography>
+                                        </Box>
+                                    )}
+                                    <Box pr='30px'>
+                                        <CartIcon/>
                                     </Box>
-                                ) : (
-                                    <Box pl='24px'>
-                                        <Typography variant="h6"><Bold>GESTOR</Bold> S.G.I</Typography>
-                                    </Box>
-                                )}
-                                <Box pr='30px'>
-                                    <IconButton>
-                                        <AddShoppingCartIcon sx={{color: 'var(--primarycolor)'}} fontSize='large'/>
-                                    </IconButton>
-                                </Box>
-                            </HeaderInner>
-                        </Toolbar>
-                    </HeaderBar>
-                    <ContentBand>
-                        <Box sx={{overflowY: 'visible', minWidth: 0, padding: '0 24px 0 24px'}}>
-                            {children}
-                        </Box>
-                    </ContentBand>
-                </Shell>
-            </BoxArea>
+                                </HeaderInner>
+                            </Toolbar>
+                        </HeaderBar>
+                        <ContentBand>
+                            <Box sx={{overflowY: 'visible', minWidth: 0, padding: '0 24px 0 24px'}}>
+                                {children}
+                            </Box>
+                        </ContentBand>
+                    </Shell>
+                </BoxArea>
+            </CartProvider>
+
         </Root>
         </body>
         </html>

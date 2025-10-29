@@ -22,6 +22,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import {CTAButton, FeatureCard, Features, Footer, Header, Hero, IconBubble, PriceCard, Pricing, Ribbon } from './style';
 
+
 const theme = createTheme({
     palette: {
         mode: 'light',

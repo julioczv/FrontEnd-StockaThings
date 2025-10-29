@@ -133,12 +133,9 @@ export const NewProductDialog = styled(Dialog)`
         width: 800px;
         border-radius: 16px;
         padding: 24px;
+        @media (max-width: 500px) {
+            
+        }
     }
 `;
 
-export const DrawerSales = styled(Drawer)`
-    .MuiPaper-root { border-radius: 12px 0 0 12px; width: 420px; }
-    @media (max-width: 600px) {
-        .MuiPaper-root { width: 100%; border-radius: 0; }
-    }
-`;

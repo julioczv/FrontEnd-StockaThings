@@ -11,12 +11,14 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {useState} from "react";
-import {rowsDemo} from "@/app/labels/navbarmodels";
+import {rowsDemo, Row} from "@/app/labels/navbarmodels";
 import {Close, Search} from '@mui/icons-material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import {StyledTableContainer, DrawerSales, BoxInput, AddProduct, NewProductDialog} from "./style";
+import {StyledTableContainer, BoxInput, AddProduct, NewProductDialog} from "./style";
 import {theme} from '@/app/globalsmui';
 import ButtonProp from "@/app/components/buttons/buttonprop";
+import {useCart} from '@/app/cart/CartProvider';
+
 
 const unidMedida = ["Unidade", "Ml", "Pacote"]
 const categoria = ["Insumo", "Venda", "Teste"]
@@ -28,9 +30,6 @@ const Home = () => {
     const [openNewProduct, setOpenNewProduct] = useState(false);
     const isMobile = useMediaQuery('(max-width:600px)', {noSsr: true});
 
-    const toggleDrawer = (newOpen: boolean) => () => {
-        setOpen(newOpen);
-    };
 
     const handleOpenNewProduct = () => setOpenNewProduct(true);
     const handleCloseNewProduct = () => setOpenNewProduct(false);
@@ -71,7 +70,7 @@ const Home = () => {
                         />
                         {isMobile ? (
                             <Box>
-                                <AddProduct>
+                                <AddProduct onClick={handleOpenNewProduct}>
                                     <AddIcon/>
                                 </AddProduct>
                             </Box>
@@ -123,6 +122,7 @@ const Home = () => {
                                     </TableRow>
                                 ))}
                         </TableBody>
+
                     </Table>
                     <TablePagination
                         sx={{backgroundColor: '#F3F7F9'}}
@@ -137,14 +137,6 @@ const Home = () => {
                     />
                 </StyledTableContainer>
 
-                <DrawerSales anchor="right" open={open} onClose={toggleDrawer(false)}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                        <Typography variant="h6">Novo Produto</Typography>
-                        <IconButton onClick={toggleDrawer(false)}>
-                            <Close/>
-                        </IconButton>
-                    </Box>
-                </DrawerSales>
                 <NewProductDialog open={openNewProduct} onClose={handleCloseNewProduct}>
                     <Stack direction='row' justifyContent='space-between' pb='24px'>
                         <Typography variant='h6'>Adicionar Produto</Typography>
@@ -167,42 +159,49 @@ const Home = () => {
                                 rows={5}
                             />
                         </Grid>
-                        <Grid size={4}>
+                        <Grid size={{xl: 4, lg: 4, md: 4, sm: 4, xs: 12}} >
                             <TextField
                                 type='number'
                                 label='Valor de Custo'
+                                fullWidth
                             />
                         </Grid>
-                        <Grid size={4}>
+                        <Grid size={{xl: 4, lg: 4, md: 4, sm: 4, xs: 12}} >
                             <TextField
                                 type='number'
                                 label='Valor de Venda'
+                                fullWidth
                             />
                         </Grid>
-                        <Grid size={4}>
+                        <Grid size={{xl: 4, lg: 4, md: 4, sm: 4, xs: 12}} >
                             <TextField
                                 type='number'
                                 label='Quantidade'
+                                fullWidth
                             />
                         </Grid>
-                        <Autocomplete
-                            options={unidMedida}
-                            fullWidth={true}
-                            renderInput={(params) => (
-                                <TextField {...params} label="Unidade de Medida"/>
-                            )}
-                        />
-                        <Autocomplete
-                            options={categoria}
-                            fullWidth={true}
-                            renderInput={(params) => (
-                                <TextField {...params} label="Categoria"/>
-                            )}
-                        />
+                        <Grid  size={12}>
+                            <Autocomplete
+                                options={unidMedida}
+                                fullWidth={true}
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Unidade de Medida"/>
+                                )}
+                            />
+                        </Grid>
+                        <Grid  size={12}>
+                            <Autocomplete
+                                options={categoria}
+                                fullWidth={true}
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Categoria"/>
+                                )}
+                            />
+                        </Grid>
                     </Grid>
 
                     <Stack direction='row' justifyContent='end' pt={2}>
-                        <ButtonProp label='Adicionar Produto' startIcon={<AddIcon/>} color='var(--savebutton)'/>
+                        <ButtonProp label='Adicionar Produto' startIcon={<AddIcon/>}/>
                     </Stack>
                 </NewProductDialog>
             </Box>

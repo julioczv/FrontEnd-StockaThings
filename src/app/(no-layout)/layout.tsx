@@ -1,7 +1,11 @@
-export default function NoLayout({ children }: { children: React.ReactNode }) {
+import './globals.css'
+
+export default function NoLayout({children}: { children: React.ReactNode }) {
     return (
         <html lang="pt-BR">
-        <body>{children}</body>
+        <body>
+            {children}
+        </body>
         </html>
     );
 }
