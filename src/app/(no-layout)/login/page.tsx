@@ -1,46 +1,104 @@
 'use client'
 
 import React from 'react'
-import {Box, Stack, TextField, Typography} from "@mui/material";
+import {Box, Stack, styled, TextField, Typography} from "@mui/material";
 import '../globals.css'
 import ButtonProp from "@/app/components/buttons/buttonprop";
+import {validateEmail} from "@/app/utils/Masks";
 
+
+const InputLogin = styled(TextField)`
+    fieldset {
+        border: none;
+        border-bottom: 1px solid var(--primarycolor) !important;
+        border-radius: 0;
+    }
+`
+
+const LettersStyles = styled(Typography)`
+    font-weight: 500;
+    text-decoration: underline;
+    color: var(--primarycolor);
+    &:hover {
+        cursor: pointer
+    }
+`
+
+const LoginArea = styled(Box)`
+    background: white;
+    height: 700px;
+    width: 500px;
+    padding: 24px;
+    flex-direction: column;
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    border-radius: 0 16px 16px 0;
+`
 
 const Login = () => {
+    const [email, setEmail] = React.useState('');
+    const [emailError, setEmailError] = React.useState(false);
+    const [emailHelperText, setEmailHelperText] = React.useState('');
+    const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const nextEmail = event.target.value;
+        setEmail(nextEmail);
+
+        if (nextEmail.length > 0) {
+            const isValid = validateEmail(nextEmail);
+            if (isValid) {
+                setEmailError(false);
+                setEmailHelperText('');
+            } else {
+                setEmailError(true);
+                setEmailHelperText('Formato de e-mail inválido.');
+            }
+        } else {
+            setEmailError(false);
+            setEmailHelperText('');
+        }
+    };
+    const handleEmailBlur = () => {
+        if (email.length > 0) {
+            const isValid = validateEmail(email);
+            setEmailError(!isValid);
+            setEmailHelperText(!isValid ? 'Por favor, insira um e-mail válido.' : '');
+        }
+    };
+
     return (
 
 
         <Box sx={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
             <Box sx={{display: 'flex'}}>
-                <img src="/images/screenlogin.png" alt="imagem do login" width="800px" height="700px"/>
-                <Box sx={{
-                    background: 'white',
-                    height: '700px',
-                    width: '500px',
-                    padding: '24px',
-                    flexDirection: 'column',
-                    display: 'flex',
-                    gap: '24px',
-                    justifyContent: 'center',
-
-                }}>
-                    <Box sx={{display: 'flex', justifyContent: 'center'}}>
+                <img src="/images/screenlogin.png" alt="imagem do login" width="800px" height="700px" style={{borderRadius: '16px 0 0 16px'}} />
+                <LoginArea>
+                    <Stack direction='row' justifyContent= 'center'>
                         <img src="/images/Logo.png" alt="" width='200px'/>
-                    </Box>
-                    <TextField
-                        label='Email'
+                    </Stack>
+                    <InputLogin
+                        label="E-mail"
+                        value={email}
+                        onChange={handleEmailChange}
+                        onBlur={handleEmailBlur}
+                        error={emailError}
+                        helperText={emailHelperText}
+                        fullWidth
                     />
-                    <TextField
+                    <InputLogin
                         label='Senha'
+                        type='password'
                     />
-                    <Box sx={{display: 'flex', justifyContent: 'end', color: 'var(--primarycolor)',}}>
-                        <Typography sx={{fontWeight: '500', textDecoration: 'underline'}}>Esqueceu a senha
-                            ?</Typography>
+                    <Box sx={{display: 'flex', justifyContent: 'end'}}>
+                        <LettersStyles>Esqueceu a senha ?</LettersStyles>
                     </Box>
                     <Stack direction='row' justifyContent='center' pt={2}>
-                        <ButtonProp label="Entrar" width='60%'/>
+                        <Box>
+                            <LettersStyles pb={2}>Não tem uma conta ? Crie uma agora</LettersStyles>
+                            <ButtonProp label="Entrar" width='300px'/>
+                        </Box>
                     </Stack>
-                </Box>
+                </LoginArea>
             </Box>
         </Box>
 
