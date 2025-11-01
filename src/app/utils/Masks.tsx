@@ -1,133 +1,92 @@
 'use client'
+import React, { forwardRef } from 'react'
+import type { InputBaseComponentProps } from '@mui/material/InputBase'
 
-import * as React from 'react'
-import {IMaskInput} from 'react-imask';
-import {forwardRef} from 'react';
-import { TextField, TextFieldProps } from "@mui/material";
 
-type MaskProps = {
-    name: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-};
+export const onlyDigits = (v: string) => (v || '').replace(/\D/g, '')
 
-export const PhoneMask = forwardRef<HTMLInputElement, MaskProps>(function PhoneMask(
-    {name, onChange, ...rest}, ref
-) {
-    return (
-        <IMaskInput
-            {...rest}
-            inputRef={ref}
-            mask={[
-                {mask: '(00) 0000-0000'},
-                {mask: '(00) 0 0000-0000'},
-            ]}
-            dispatch={(appended, masked) => {
-                const digits = (masked.unmaskedValue + appended).replace(/\D/g, '');
-                return masked.compiledMasks[digits.length > 10 ? 1 : 0];
-            }}
-            overwrite
-            onAccept={(value) => onChange({target: {name, value}} as never)}
-        />
-    );
-})
 
-export const CpfCnpjMask = forwardRef<HTMLInputElement, MaskProps>(function CpfCnpjMask(
-    { name, onChange, ...rest }, ref
-) {
-    return (
-        <IMaskInput
-            {...rest}
-            inputRef={ref}
-            mask={[
-                { mask: '000.000.000-00' },
-                { mask: '00.000.000/0000-00' },
-            ]}
-            dispatch={(appended, masked) => {
-                const digits = (masked.unmaskedValue + appended).replace(/\D/g, '');
-                return masked.compiledMasks[digits.length > 11 ? 1 : 0];
-            }}
-            onAccept={(value) => onChange({ target: { name, value } } as any)}
-        />
-    );
-});
+export const validateEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)
 
-export const CepMask = forwardRef<HTMLInputElement, MaskProps>(function CepMask(
-    { name, onChange, ...rest }, ref
-) {
-    return (
-        <IMaskInput
-            {...rest}
-            inputRef={ref}
-            mask="00000-000"
-            onAccept={(value) => onChange({ target: { name, value } } as any)}
-        />
-    );
-});
 
-export const RgIeMask = forwardRef<HTMLInputElement, MaskProps>(function RgIeMask(
-    { name, onChange, ...rest }, ref
-) {
-    return (
-        <IMaskInput
-            {...rest}
-            inputRef={ref}
-            mask={[
-                { mask: '00.000.000-0'  },
-                { mask: '00.000.000-00' },
-                { mask: '000.000.000.000' },
-            ]}
+export const validateCNPJ = (cnpjMaskedOrDigits: string) => {
+    const cnpj = onlyDigits(cnpjMaskedOrDigits)
+    if (cnpj.length !== 14) return false
+    if (/^(\d)\1{13}$/.test(cnpj)) return false
 
-            dispatch={(appended, masked) => {
-                const digits = (masked.unmaskedValue + appended).replace(/\D/g, '');
-                if (digits.length <= 9) return masked.compiledMasks[0];
-                if (digits.length === 10) return masked.compiledMasks[1];
-                return masked.compiledMasks[2];
-            }}
-            onAccept={(value) =>
-                onChange({ target: { name, value } } as React.ChangeEvent<HTMLInputElement>)
-            }
-        />
-    );
-});
+    const calc = (base: string, factor: number[]) =>
+        (base.split('').reduce((acc, n, i) => acc + parseInt(n, 10) * factor[i], 0) % 11)
 
-export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+    const b1 = cnpj.slice(0, 12)
+    const f1 = [5,4,3,2,9,8,7,6,5,4,3,2]
+    const d1 = calc(b1, f1)
+    const dv1 = d1 < 2 ? 0 : 11 - d1
 
-export function validateCPF(raw: string): boolean {
-    if (!raw) return false;
+    const b2 = cnpj.slice(0, 12) + String(dv1)
+    const f2 = [6,5,4,3,2,9,8,7,6,5,4,3,2]
+    const d2 = calc(b2, f2)
+    const dv2 = d2 < 2 ? 0 : 11 - d2
 
-    const cpf = raw.replace(/\D/g, '');
+    return cnpj.endsWith(String(dv1) + String(dv2))
+}
 
-    if (cpf.length !== 11) return false;
-    if (/^(\d)\1{10}$/.test(cpf)) return false;
+export const CepMask = forwardRef<HTMLInputElement, InputBaseComponentProps>(
+    function CepMask(props, ref) {
+        const { onChange, value, name, ...other } = props
 
-    const calcDV = (base: string, factorStart: number) => {
-        let sum = 0;
-        for (let i = 0; i < base.length; i++) {
-            sum += parseInt(base[i], 10) * (factorStart - i);
+        const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const digits = onlyDigits(e.target.value).slice(0, 8)
+            const masked = digits.replace(/(\d{5})(\d{0,3})/, (_, a: string, b: string) => (b ? `${a}-${b}` : a))
+            onChange?.({
+                ...e,
+                target: { ...e.target, name, value: masked },
+            } as unknown as React.ChangeEvent<HTMLInputElement>)
         }
-        const rest = (sum * 10) % 11;
-        return rest === 10 ? 0 : rest;
-    };
 
-    const dv1 = calcDV(cpf.slice(0, 9), 10);
-    if (dv1 !== parseInt(cpf[9], 10)) return false;
+        return (
+            <input
+                {...other}
+                ref={ref}
+                value={typeof value === 'string' || typeof value === 'number' ? String(value) : ''}
+                onChange={handleChange}
+                inputMode="numeric"
+                autoComplete="postal-code"
+                pattern=".*"
+            />
+        )
+    }
+)
 
-    const dv2 = calcDV(cpf.slice(0, 10), 11);
-    if (dv2 !== parseInt(cpf[10], 10)) return false;
+export const CnpjMask = forwardRef<HTMLInputElement, InputBaseComponentProps>(
+    function CnpjMask(props, ref) {
+        const { onChange, value, name, ...other } = props
 
-    return true;
-}
+        const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const digits = onlyDigits(e.target.value).slice(0, 14)
+            // 00.000.000/0000-00
+            const masked = digits
+                .replace(/^(\d{2})(\d)/, '$1.$2')
+                .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+                .replace(/\.(\d{3})(\d)/, '.$1/$2')
+                .replace(/(\d{4})(\d)/, '$1-$2')
 
-export function validateEmail(email: string): boolean {
-    return EMAIL_PATTERN.test(email || '');
-}
+            onChange?.({
+                ...e,
+                target: { ...e.target, name, value: masked },
+            } as unknown as React.ChangeEvent<HTMLInputElement>)
+        }
 
-
-type MoneyMaskProps = Omit<TextFieldProps, 'value' | 'onChange' | 'type'> & {
-    valueCents?: number;
-    onChangeCents?: (next: number) => void;
-    locale?: 'pt-BR';
-    currency?: 'BRL';
-    showSymbol?: boolean;
-    label?: string;
-};
+        return (
+            <input
+                {...other}
+                ref={ref}
+                value={typeof value === 'string' || typeof value === 'number' ? String(value) : ''}
+                onChange={handleChange}
+                inputMode="numeric"
+                autoComplete="on"
+                pattern=".*"
+            />
+        )
+    }
+)
