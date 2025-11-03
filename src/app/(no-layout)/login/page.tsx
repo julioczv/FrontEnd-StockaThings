@@ -1,10 +1,11 @@
 'use client'
 
-import React from 'react'
-import {Box, Stack, styled, TextField, Typography} from "@mui/material";
+import React, {useState} from 'react'
+import {Box, Stack, styled, TextField, Link, Alert} from "@mui/material";
 import '../globals.css'
 import ButtonProp from "@/app/components/buttons/buttonprop";
 import {validateEmail} from "@/app/utils/Masks";
+import {useRouter, useSearchParams} from 'next/navigation';
 
 
 const InputLogin = styled(TextField)`
@@ -15,10 +16,10 @@ const InputLogin = styled(TextField)`
     }
 `
 
-const LettersStyles = styled(Typography)`
+const LettersStyles = styled(Link)`
     font-weight: 500;
-    text-decoration: underline;
     color: var(--primarycolor);
+
     &:hover {
         cursor: pointer
     }
@@ -37,9 +38,18 @@ const LoginArea = styled(Box)`
 `
 
 const Login = () => {
-    const [email, setEmail] = React.useState('');
-    const [emailError, setEmailError] = React.useState(false);
-    const [emailHelperText, setEmailHelperText] = React.useState('');
+    const router = useRouter();
+    const params = useSearchParams();
+    const redirectTo = params.get('from') || '/home';
+    const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState(false);
+    const [emailHelperText, setEmailHelperText] = useState('');
+    const [senha, setSenha] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+
+
+
     const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const nextEmail = event.target.value;
         setEmail(nextEmail);
@@ -71,33 +81,43 @@ const Login = () => {
 
         <Box sx={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
             <Box sx={{display: 'flex'}}>
-                <img src="/images/screenlogin.png" alt="imagem do login" width="800px" height="700px" style={{borderRadius: '16px 0 0 16px'}} />
+                <img src="/images/screenlogin.png" alt="imagem do login" width="800px" height="700px"
+                     style={{borderRadius: '16px 0 0 16px'}}/>
                 <LoginArea>
-                    <Stack direction='row' justifyContent= 'center'>
-                        <img src="/images/Logo.png" alt="" width='200px'/>
-                    </Stack>
-                    <InputLogin
-                        label="E-mail"
-                        value={email}
-                        onChange={handleEmailChange}
-                        onBlur={handleEmailBlur}
-                        error={emailError}
-                        helperText={emailHelperText}
-                        fullWidth
-                    />
-                    <InputLogin
-                        label='Senha'
-                        type='password'
-                    />
-                    <Box sx={{display: 'flex', justifyContent: 'end'}}>
-                        <LettersStyles>Esqueceu a senha ?</LettersStyles>
-                    </Box>
-                    <Stack direction='row' justifyContent='center' pt={2}>
-                        <Box>
-                            <LettersStyles pb={2}>Não tem uma conta ? Crie uma agora</LettersStyles>
-                            <ButtonProp label="Entrar" width='300px'/>
+                    <Box component='form' onSubmit={onSubmit}>
+                        <Stack direction='row' justifyContent='center'>
+                            <img src="/images/Logo.png" alt="" width='200px'/>
+                        </Stack>
+                        <InputLogin
+                            label="E-mail"
+                            value={email}
+                            type='email'
+                            required
+                            onChange={handleEmailChange}
+                            onBlur={handleEmailBlur}
+                            error={emailError}
+                            helperText={emailHelperText}
+                            fullWidth
+                        />
+                        <InputLogin
+                            label='Senha'
+                            type='password'
+                            required
+                        />
+                        {err && <Alert severity='error'>{err}</Alert>}
+                        <Box sx={{display: 'flex', justifyContent: 'end'}}>
+                            <LettersStyles>Esqueceu a senha ?</LettersStyles>
                         </Box>
-                    </Stack>
+                        <Stack direction='column' justifyContent='center' pt={2} alignItems='center' spacing={2}>
+                            <Box>
+                                <LettersStyles href='./register' pb={2}>Não tem uma conta ? Crie uma
+                                    agora</LettersStyles>
+                            </Box>
+                            <Box>
+                                <ButtonProp label="Entrar" width='300px' type='submit'/>
+                            </Box>
+                        </Stack>
+                    </Box>
                 </LoginArea>
             </Box>
         </Box>

@@ -94,48 +94,23 @@ export const StyledTableContainer = styled(TableContainer)`
     }
 `;
 
-export const BoxInput = styled(Box)`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    .MuiOutlinedInput-root {
-        width: 400px;
-    }
-
-    @media (max-width: 900px) {
-        .MuiOutlinedInput-root {
-            width: 100%;
-            max-width: 480px;
-        }
-    }
-
-    @media (max-width: 800px) {
-        padding-left: 9px;
-    }
-    @media (max-width: 600px) {
-        .MuiOutlinedInput-root {
-            width: 100%;
-        }
-    }
-`;
-
-export const Bold = styled("span")` font-weight: 700; `;
-
-export const AddProduct = styled(Button)`
-    background: var(--primarycolor);
-    color: white;
-    border-radius: 32px;
+export const ContainerSales = styled(Box)`
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    background: white;
+    width: 100%;
+    height: 300px;
+    padding: 16px;
+`
+export const DisplayGrid = styled(Box)`
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding-bottom: 24px;
+    gap: 16px;
 `
 
-export const NewProductDialog = styled(Dialog)`
-    .MuiPaper-root {
-        background: white;
-        width: 800px;
-        border-radius: 16px;
-        padding: 24px;
-        @media (max-width: 500px) {
-            
-        }
-    }
-`;
-
+export const FlexCenter = styled(Box)`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`

@@ -9,11 +9,12 @@ type ButtonProps = {
     height?: number | string;
     onClick?: () => void;
     disabled?: boolean;
+    type?: 'button' | 'submit';
     color?: string;
     startIcon?: React.ReactNode;
 };
 
-const ButtonProp: React.FC<ButtonProps> = ({ label, width = 'auto', onClick, disabled, startIcon, height, color }) => {
+const ButtonProp: React.FC<ButtonProps> = ({ label, width = 'auto', onClick, disabled, startIcon, height, color, type='button' }) => {
 
     const customBg = color
         ? {
@@ -31,6 +32,7 @@ const ButtonProp: React.FC<ButtonProps> = ({ label, width = 'auto', onClick, dis
             disableElevation
             onClick={onClick}
             disabled={disabled}
+            type={type}
             startIcon={startIcon}
             sx={{
                 width,

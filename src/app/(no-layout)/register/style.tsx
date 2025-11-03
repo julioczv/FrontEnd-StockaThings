@@ -1,4 +1,4 @@
-import {Box, styled, TextField } from "@mui/material"
+import {Box, styled, TextField, Typography } from "@mui/material"
 
 export const InputRegister = styled(TextField)`
    
@@ -9,9 +9,10 @@ export const RegisterArea = styled(Box)`
     height: 700px;
     width: 1000px;
     padding: 24px;
-    flex-direction: column;
-    display: flex;
-    gap: 24px;
-    justify-content: center;
     border-radius: 16px;
+`
+
+export const Title = styled(Typography)`
+   color: var(--primarycolor);
+    padding-top: 24px;
 `
