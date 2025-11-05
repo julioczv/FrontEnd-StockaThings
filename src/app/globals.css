@@ -16,7 +16,7 @@ body{
   background: var(--secondarycolor) !important;
 }
 
-html {
+html, body {
   background: var(--secondarycolor) !important;
 }
 

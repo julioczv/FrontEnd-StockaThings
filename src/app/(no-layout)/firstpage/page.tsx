@@ -68,8 +68,8 @@ export default function LandingStockaThings() {
                             <Button color="inherit" href="#contact">Contato</Button>
                         </Stack>
 
-                        <CTAButton variant="contained" color="primary">
-                            Começar agora
+                        <CTAButton variant="contained" color="primary" href='/auth/login'>
+                            Logue na Sua Conta
                         </CTAButton>
                     </Container>
                 </Toolbar>
@@ -214,7 +214,7 @@ export default function LandingStockaThings() {
                         Junte-se a centenas de lojistas que já estão otimizando sua gestão com a Stocka Things.
                     </Typography>
 
-                    <CTAButton variant="contained"
+                    <CTAButton variant="contained" href='/auth/register'
                                sx={{bgcolor: '#fff', color: '#0C5144', '&:hover': {bgcolor: '#E5E7EB'}}}>
                         Crie sua conta
                     </CTAButton>

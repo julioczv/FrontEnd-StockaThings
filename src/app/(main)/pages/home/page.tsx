@@ -19,7 +19,7 @@ import ButtonProp from '@/app/components/buttons/buttonprop';
 type FormState = {
     nomeProduto: string;
     descricaoProduto: string;
-    valorPagoProduto: string;   // usar string p/ evitar problemas de locale no TextField
+    valorPagoProduto: string;
     valorVendaProduto: string;
     quantidadeProduto: string;
     unidadeMedida: string | null;
@@ -53,14 +53,6 @@ const Home = () => {
     const isMobile = useMediaQuery('(max-width:600px)', { noSsr: true });
 
 
-
-    async function apiCreateProduct() {
-        console.log('CREATE payload →', payload);
-    }
-
-    async function apiUpdateProduct(id: number) {
-        console.log('UPDATE id, payload →', id, payload);
-    }
     const handleOpenNewProduct = () => {
         setMode('create');
         setSelectedId(null);
