@@ -1,70 +1,130 @@
 'use client';
 
 import * as React from 'react';
-import { ThemeProvider } from 'styled-components';
+import {ThemeProvider} from 'styled-components';
 import {
     Box, Table, TableBody, TableCell, TableHead, TableRow,
     Typography, TablePagination, IconButton, TextField,
     InputAdornment, useMediaQuery, Autocomplete, Stack, Grid
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import { useEffect, useMemo, useState } from 'react';
-import { rowsDemo } from '@/app/labels/navbarmodels';
-import { Close, Search } from '@mui/icons-material';
+import {useEffect, useMemo, useState} from 'react';
+import {Close, Search} from '@mui/icons-material';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import { StyledTableContainer, BoxInput, AddProduct, NewProductDialog } from './style';
-import { theme } from '@/app/globalsmui';
+import {StyledTableContainer, BoxInput, AddProduct, NewProductDialog, DeleteModalDialog} from './style';
+import {theme} from '@/app/globalsmui';
 import ButtonProp from '@/app/components/buttons/buttonprop';
+import {
+    deleteProduct,
+    getCategory,
+    getProductById,
+    getProducts,
+    getUnityMeasure,
+    postProducts,
+    putProduct
+} from './service';
+import {api} from "@/app/interceptor/api";
+import {IProductId, IProducts} from "@/app/domain/models/dto/IProducts";
+import {IUnityMeasure} from "@/app/domain/models/dto/IUnityMeasure";
+import {ICategory} from "@/app/domain/models/dto/ICategory";
+import {DeleteOutlineOutlined as Trash, Edit, Add} from '@mui/icons-material';
+import toast, {Toaster} from 'react-hot-toast';
+import {useCart} from '@/app/cart/CartProvider';
+
 
 type FormState = {
     nomeProduto: string;
     descricaoProduto: string;
     valorPagoProduto: string;
     valorVendaProduto: string;
-    quantidadeProduto: string;
-    unidadeMedida: string | null;
-    categoria: string | null;
+    qtdProduto: string;
+    unidadeMedida: IUnityMeasure | null;
+    categoria: ICategory | null;
 };
 
-const unidMedida = ['Unidade', 'Ml', 'Pacote'];
-const categorias = ['Insumo', 'Venda', 'Teste'];
 
 const emptyForm: FormState = {
     nomeProduto: '',
     descricaoProduto: '',
     valorPagoProduto: '',
     valorVendaProduto: '',
-    quantidadeProduto: '',
+    qtdProduto: '',
     unidadeMedida: null,
     categoria: null,
 };
 
-type Mode = 'create' | 'edit';
 
 const Home = () => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-
     const [openModal, setOpenModal] = useState(false);
-    const [mode, setMode] = useState<Mode>('create');
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [form, setForm] = useState<FormState>(emptyForm);
+    const [products, setProducts] = useState<IProductId[]>([]);
+    const [unityMeasure, setUnityMeasure] = useState<IUnityMeasure[]>([]);
+    const [category, setCategory] = useState<ICategory[]>([]);
+    const [query, setQuery] = useState('');
+    const [edit, setEdit] = useState<boolean>(true);
+    const [openModalDelete, setOpenModalDelete] = useState<boolean>(false);
+    const [toDelete, setToDelete] = useState<{ id: number; name: string } | null>(null);
 
-    const isMobile = useMediaQuery('(max-width:600px)', { noSsr: true });
+    const isMobile = useMediaQuery('(max-width:600px)', {noSsr: true});
 
+    const {add} = useCart();
 
     const handleOpenNewProduct = () => {
-        setMode('create');
         setSelectedId(null);
         setForm(emptyForm);
         setOpenModal(true);
+        setEdit(false);
     };
 
-    const handleOpenEditProduct = async (id: number) => {
-        setMode('edit');
-        setSelectedId(id);
+    const handleOpenEditProduct = async (idProduto: number) => {
+        setSelectedId(idProduto);
         setOpenModal(true);
+        setEdit(true);
 
+
+        try {
+            const productData = await getProductById(api, idProduto)
+
+            if (productData) {
+                const selectedCategory = category.find(c => c.categoriaId === productData.categoriaId) ?? null;
+                const selectedUnityMeasure = unityMeasure.find(u => u.unidadeMedidaId === productData.unidadeMedidaId) ?? null;
+
+                setForm({
+                    nomeProduto: productData.nomeProduto ?? '',
+                    descricaoProduto: productData.descricaoProduto ?? '',
+                    valorPagoProduto: String(productData.valorPagoProduto),
+                    valorVendaProduto: String(productData.valorVendaProduto),
+                    qtdProduto: String(productData.qtdProduto),
+                    unidadeMedida: selectedUnityMeasure,
+                    categoria: selectedCategory,
+                })
+            }
+        } catch (error) {
+            console.error(`Erro ao buscar produto #${idProduto} para edição: `, error);
+            setOpenModal(false);
+        }
+    };
+
+    const handleOpenModalDelete = (idProduto: number) => {
+        const p = products.find(p => p.idProduto === idProduto);
+        setToDelete({id: idProduto, name: p?.nomeProduto ?? ''});
+        setOpenModalDelete(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!toDelete) return;
+        try {
+            await deleteProduct(api, toDelete.id);
+            await productsTable();
+            toast.success(`Produto "${toDelete.name}" deletado com sucesso!`);
+        } catch {
+            toast.error('Erro ao excluir o produto pois o produto já está lançado como histórico de venda.');
+        } finally {
+            setOpenModalDelete(false);
+            setToDelete(null);
+        }
     };
 
     const handleCloseModal = () => setOpenModal(false);
@@ -72,33 +132,9 @@ const Home = () => {
     const handleChange =
         (field: keyof FormState) =>
             (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-                setForm(prev => ({ ...prev, [field]: e.target.value }));
+                setForm(prev => ({...prev, [field]: e.target.value}));
             };
 
-    const handleSubmit = async () => {
-        const payload = {
-            nomeProduto: form.nomeProduto.trim(),
-            descricaoProduto: form.descricaoProduto.trim() || null,
-            valorPagoProduto: form.valorPagoProduto ? Number(form.valorPagoProduto) : null,
-            valorVendaProduto: form.valorVendaProduto ? Number(form.valorVendaProduto) : null,
-            quantidadeProduto: form.quantidadeProduto ? Number(form.quantidadeProduto) : 0,
-            unidadeMedida: form.unidadeMedida,
-            categoria: form.categoria,
-        };
-
-        if (mode === 'create') {
-            await apiCreateProduct(payload);
-        } else if (mode === 'edit' && selectedId != null) {
-            await apiUpdateProduct(selectedId, payload);
-        }
-
-        setOpenModal(false);
-        setForm(emptyForm);
-        setSelectedId(null);
-    };
-
-    const buttonLabel = useMemo(() => (mode === 'create' ? 'Adicionar Produto' : 'Atualizar Produto'), [mode]);
-    const modalTitle = useMemo(() => (mode === 'create' ? 'Adicionar Produto' : `Editar Produto #${selectedId}`), [mode, selectedId]);
 
     const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
     const handleChangeRowsPerPage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,13 +142,136 @@ const Home = () => {
         setPage(0);
     };
 
+
+    const productsTable = async () => {
+        try {
+            const response = await getProducts(api);
+            setProducts(response.content);
+        } catch (error) {
+            console.error("Erro ao buscar produtos: ", error);
+        }
+    }
+
+    useEffect(() => {
+        productsTable();
+    }, [api]);
+
+    useEffect(() => {
+        async function unityMeasure() {
+            try {
+                const response = await getUnityMeasure(api);
+                setUnityMeasure(Array.isArray(response) ? response : []);
+            } catch (error) {
+                console.error("Erro ao buscar produtos: ", error);
+            }
+        }
+
+        unityMeasure();
+    }, []);
+
+    useEffect(() => {
+        async function category() {
+            try {
+                const response = await getCategory(api);
+                setCategory(Array.isArray(response) ? response : []);
+            } catch (error) {
+                console.error("Erro ao buscar produtos: ", error);
+            }
+        }
+
+        category();
+    }, []);
+
+
+    const norm = (s: unknown) =>
+        String(s ?? '')
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase();
+
+    const filteredProducts = useMemo(() => {
+        if (!query.trim()) return products;
+        const q = norm(query);
+        return products.filter((p) => {
+            return (
+                norm(p.nomeProduto).includes(q) ||
+                norm(p.descricaoProduto).includes(q) ||
+                norm(p.idProduto).includes(q) ||
+                norm(p.valorPagoProduto).includes(q) ||
+                norm(p.valorVendaProduto).includes(q) ||
+                norm(p.qtdProduto).includes(q)
+            );
+        });
+    }, [products, query]);
+
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value);
+        setPage(0);
+    };
+
+    const toNumber = (v: string) => Number(String(v).replace(',', '.')) || 0;
+
+
+    const isInvalid =
+        !form.nomeProduto.trim() ||
+        !form.unidadeMedida ||
+        !form.categoria ||
+        !form.valorPagoProduto ||
+        !form.valorVendaProduto ||
+        !form.qtdProduto;
+
+    const handleSubmit = async () => {
+        if (isInvalid) return;
+
+        const isEditing = selectedId !== null;
+        const payload: IProducts = {
+            nomeProduto: form.nomeProduto,
+            descricaoProduto: form.descricaoProduto,
+            valorPagoProduto: toNumber(form.valorPagoProduto),
+            valorVendaProduto: toNumber(form.valorVendaProduto),
+            qtdProduto: toNumber(form.qtdProduto),
+            unidadeMedidaId: form.unidadeMedida?.unidadeMedidaId ?? 0,
+            categoriaId: form.categoria?.categoriaId ?? 0,
+        };
+
+        try {
+            if (isEditing) {
+                await putProduct(api, selectedId!, payload);
+                toast.success(`Produto ${selectedId} atualizado com sucesso!`);
+
+            } else {
+                await postProducts(api, payload);
+                toast.success('Produto criado com sucesso!');
+            }
+            await productsTable();
+            handleCloseModal();
+            setForm(emptyForm);
+
+        } catch (error) {
+            console.error(`Erro ao ${isEditing ? 'atualizar' : 'criar'} o produto: `, error);
+            toast.error(`Erro ao ${isEditing ? 'atualizar' : 'criar'} o produto: `);
+        }
+    };
+
+    const qtySx = (q?: number) => {
+        const n = q ?? 0;
+        return {
+            color: n >= 10 ? 'success.main' : n <= 5 ? 'error.main' : 'warning.main',
+            fontWeight: 700,
+        }
+    };
+
     return (
         <ThemeProvider theme={theme}>
-            <Box sx={{ overflowY: 'hidden', maxHeight: '100dvh' }}>
+            <Toaster position='top-center'/>
+            <Box sx={{overflowY: 'hidden', maxHeight: '100dvh'}}>
                 <Box p="24px 0">
                     <BoxInput>
                         <TextField
                             label="Pesquisar produto"
+                            value={query}
+                            onChange={handleSearch}
                             sx={{
                                 '.MuiOutlinedInput-root': {
                                     borderRadius: '24px',
@@ -124,7 +283,7 @@ const Home = () => {
                                 input: {
                                     endAdornment: (
                                         <InputAdornment position="end">
-                                            <Search />
+                                            <Search/>
                                         </InputAdornment>
                                     ),
                                 },
@@ -133,12 +292,13 @@ const Home = () => {
                         {isMobile ? (
                             <Box>
                                 <AddProduct onClick={handleOpenNewProduct}>
-                                    <AddIcon />
+                                    <Add/>
                                 </AddProduct>
                             </Box>
                         ) : (
                             <Box>
-                                <ButtonProp label="Adicionar Produto" startIcon={<AddIcon />} onClick={handleOpenNewProduct} />
+                                <ButtonProp label="Adicionar Produto" startIcon={<Add/>}
+                                            onClick={handleOpenNewProduct}/>
                             </Box>
                         )}
                     </BoxInput>
@@ -150,42 +310,55 @@ const Home = () => {
                             <TableRow>
                                 <TableCell>Código</TableCell>
                                 <TableCell>Produto</TableCell>
-                                <TableCell sx={{ width: '160px' }} align="center">
+                                <TableCell sx={{width: '160px'}} align="center">
                                     Valor de Custo
                                 </TableCell>
                                 <TableCell align="center">Valor de Venda</TableCell>
                                 <TableCell align="center">Quantidade</TableCell>
-                                <TableCell align="center" sx={{ width: '100px' }}>
+                                <TableCell align="center" sx={{width: '100px'}}>
                                     Ações
                                 </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {rowsDemo.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(item => (
-                                <TableRow key={item.id} hover>
-                                    <TableCell data-label="Código:">{item.id}</TableCell>
-                                    <TableCell data-label="Produto:">{item.nomeproduto}</TableCell>
+                            {filteredProducts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(item => (
+                                <TableRow key={item.idProduto} hover>
+                                    <TableCell data-label="Código:">{item.idProduto}</TableCell>
+                                    <TableCell data-label="Produto:">{item.nomeProduto}</TableCell>
                                     <TableCell data-label="Valor de Custo:" align="center">
-                                        R$ {item.valorpago}
+                                        R$ {item.valorPagoProduto}
                                     </TableCell>
                                     <TableCell data-label="Valor de Venda:" align="center">
-                                        R$ {item.valorvenda}
+                                        R$ {item.valorVendaProduto}
                                     </TableCell>
-                                    <TableCell data-label="Quantidade:" align="center">
-                                        {item.quantidade}
+                                    <TableCell data-label="Quantidade:" align="center" sx={qtySx(item.qtdProduto)}>
+                                        {item.qtdProduto ?? 0}
                                     </TableCell>
-                                    <TableCell data-label="Ações" className="cell-actions" align="left">
+                                    <TableCell data-label="Ações" className="cell-actions" align="center" width='150px'>
                                         <Box>
-                                            {/* aqui poderia adicionar ao carrinho etc. */}
-                                            <IconButton sx={{ color: 'var(--primarycolor)' }}>
-                                                <AddIcon />
+                                            <IconButton
+                                                sx={{color: 'var(--primarycolor)'}}
+                                                onClick={() => add({
+                                                    idProduto: item.idProduto,
+                                                    nomeProduto: item.nomeProduto ?? '',
+                                                    descricao: item.descricaoProduto ?? '',
+                                                    precoVenda: Number(item.valorVendaProduto),
+                                                    precoCusto: Number(item.valorPagoProduto),
+                                                }, 1)}
+                                                aria-label={`Adicionar ${item.nomeProduto} ao carrinho`}
+                                            >
+                                                <Add/>
                                             </IconButton>
                                             <IconButton
-                                                sx={{ color: 'var(--primarycolor)' }}
-                                                onClick={() => handleOpenEditProduct(item.id)}
-                                                aria-label={`Editar produto ${item.id}`}
+                                                sx={{color: 'var(--primarycolor)'}}
+                                                onClick={() => handleOpenEditProduct(item.idProduto)}
+                                                aria-label={`Editar produto ${item.idProduto}`}
                                             >
-                                                <VisibilityOutlinedIcon />
+                                                <VisibilityOutlinedIcon/>
+                                            </IconButton>
+                                            <IconButton sx={{color: 'var(--primarycolor)'}}
+                                                        onClick={() => handleOpenModalDelete(item.idProduto)}>
+                                                <Trash/>
                                             </IconButton>
                                         </Box>
                                     </TableCell>
@@ -195,10 +368,10 @@ const Home = () => {
                     </Table>
 
                     <TablePagination
-                        sx={{ backgroundColor: '#F3F7F9' }}
+                        sx={{backgroundColor: '#F3F7F9'}}
                         rowsPerPageOptions={[10, 15, 20]}
                         component="div"
-                        count={rowsDemo.length}
+                        count={filteredProducts.length}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}
@@ -207,26 +380,27 @@ const Home = () => {
                     />
                 </StyledTableContainer>
 
-                {/* Modal único para criar/editar */}
                 <NewProductDialog open={openModal} onClose={handleCloseModal}>
                     <Stack direction="row" justifyContent="space-between" pb="24px" alignItems="center">
-                        <Typography variant="h6">{modalTitle}</Typography>
+                        <Typography
+                            variant="h6">{edit ? `Editar ${form.nomeProduto}` : 'Adicionar Produto'}</Typography>
                         <IconButton onClick={handleCloseModal}>
-                            <Close />
+                            <Close/>
                         </IconButton>
                     </Stack>
 
                     <Grid container spacing={2}>
-                        <Grid size={{ xs: 12 }}>
+                        <Grid size={{xs: 12}}>
                             <TextField
                                 label="Nome do Produto"
+                                disabled={edit}
                                 fullWidth
                                 value={form.nomeProduto}
                                 onChange={handleChange('nomeProduto')}
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12 }}>
+                        <Grid size={{xs: 12}}>
                             <TextField
                                 label="Descrição (Opcional)"
                                 multiline
@@ -237,7 +411,7 @@ const Home = () => {
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{xs: 12, sm: 4}}>
                             <TextField
                                 type="number"
                                 label="Valor de Custo"
@@ -247,7 +421,7 @@ const Home = () => {
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{xs: 12, sm: 4}}>
                             <TextField
                                 type="number"
                                 label="Valor de Venda"
@@ -257,41 +431,58 @@ const Home = () => {
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 4 }} >
+                        <Grid size={{xs: 12, sm: 4}}>
                             <TextField
                                 type="number"
                                 label="Quantidade"
                                 fullWidth
-                                value={form.quantidadeProduto}
-                                onChange={handleChange('quantidadeProduto')}
+                                value={form.qtdProduto}
+                                onChange={handleChange('qtdProduto')}
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12 }}>
-                            <Autocomplete
-                                options={unidMedida}
-                                value={form.unidadeMedida}
-                                onChange={(_, v) => setForm(prev => ({ ...prev, unidadeMedida: v }))}
-                                renderInput={params => <TextField {...params} label="Unidade de Medida" />}
-                                fullWidth
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12 }}>
-                            <Autocomplete
-                                options={categorias}
+                        <Grid size={{xs: 12}}>
+                            <Autocomplete<ICategory>
+                                options={category}
                                 value={form.categoria}
-                                onChange={(_, v) => setForm(prev => ({ ...prev, categoria: v }))}
-                                renderInput={params => <TextField {...params} label="Categoria" />}
-                                fullWidth
+                                onChange={(_, v) => setForm(prev => ({...prev, categoria: v}))}
+                                getOptionLabel={(opt) => opt?.nomeCategoria ?? ''}
+                                isOptionEqualToValue={(opt, val) => opt.categoriaId === val?.categoriaId}
+                                renderInput={(params) => <TextField {...params} label="Categoria"/>}
+                            />
+                        </Grid>
+
+                        <Grid size={{xs: 12}}>
+                            <Autocomplete<IUnityMeasure>
+                                options={unityMeasure}
+                                value={form.unidadeMedida}
+                                onChange={(_, v) => setForm(prev => ({...prev, unidadeMedida: v}))}
+                                getOptionLabel={(opt) => opt?.unidMedida ?? ''}
+                                isOptionEqualToValue={(opt, val) => opt.unidadeMedidaId === val?.unidadeMedidaId}
+                                renderInput={(params) => <TextField {...params} label="Unidade de Medida"/>}
                             />
                         </Grid>
                     </Grid>
 
                     <Stack direction="row" justifyContent="end" pt={2}>
-                        <ButtonProp label={buttonLabel} startIcon={<AddIcon />} onClick={handleSubmit} />
+                        <ButtonProp
+                            label={edit ? 'Editar' : 'Adicionar'}
+                            startIcon={edit ? <Edit/> : <Add/>}
+                            disabled={isInvalid}
+                            onClick={handleSubmit}
+
+                        />
                     </Stack>
                 </NewProductDialog>
+                <DeleteModalDialog open={openModalDelete} onClose={() => setOpenModalDelete(false)}>
+                    <Stack spacing={2}>
+                        <Typography> Tem certeza que deseja deletar o produto {toDelete?.name} ?</Typography>
+                        <Stack direction="row" justifyContent="flex-end" spacing={1} pt={4}>
+                            <ButtonProp onClick={() => setOpenModalDelete(false)} label='Cancelar'/>
+                            <ButtonProp color="red" onClick={handleConfirmDelete} label='Deletar'/>
+                        </Stack>
+                    </Stack>
+                </DeleteModalDialog>
             </Box>
         </ThemeProvider>
     );

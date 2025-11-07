@@ -1,6 +1,11 @@
 import styled from "styled-components";
 import {AppBar, Box, Button, Container, Dialog, Drawer, TableContainer} from "@mui/material";
 
+export const Root = styled(TableContainer)`
+    padding-bottom: 24px;
+    overflow-x: hidden;
+`
+
 export const StyledTableContainer = styled(TableContainer)`
     background: #fff;
     border-radius: 12px;
@@ -104,13 +109,65 @@ export const ContainerSales = styled(Box)`
 `
 export const DisplayGrid = styled(Box)`
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding-bottom: 24px;
     gap: 16px;
+    @media (max-width: 1300px) {
+        display: grid;
+        grid-template-columns: repeat(2, 2fr);
+    }
+    @media (max-width: 600px) {
+        display: grid;
+        grid-template-columns: repeat(1, 4fr);
+        justify-content: center;
+    }
 `
+
+export const Filter = styled(Box)`
+    display: flex;
+    gap: 16px;
+
+    justify-content: space-between;
+    align-items: center;
+    @media (max-width: 700px) {
+        flex-direction: column;
+    }
+`
+
+
+export const Inputs = styled(Box)`
+    display: flex;
+    gap: 16px;
+    @media (max-width: 700px) {
+        flex-direction: column;
+    }
+`
+
 
 export const FlexCenter = styled(Box)`
     display: flex;
     align-items: center;
     justify-content: center;
 `
+
+export const ModalProp = styled(Dialog)`
+    .MuiPaper-root {
+        background: white;
+        width: 800px;
+        border-radius: 16px;
+        padding: 24px;
+        @media (max-width: 500px) {
+
+        }
+    }
+`
+export const QtdProducts = styled(Box)`
+    width: 100%;
+    height: 60%; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+`
+
+

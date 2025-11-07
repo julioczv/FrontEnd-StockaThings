@@ -139,7 +139,7 @@ export const NewProductDialog = styled(Dialog)`
     }
 `;
 
-export const EditProductDialog = styled(Dialog)`
+export const DeleteModalDialog = styled(Dialog)`
     .MuiPaper-root {
         background: white;
         width: 800px;
