@@ -1,63 +1,62 @@
 'use client';
-import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 
-export type CartItem = { id: number; name: string; price: number; qty: number; subtitle?: string };
+export type CartItem = {
+    idProduto: number;
+    nomeProduto: string;
+    descricao: string
+    precoVenda: number;
+    precoCusto: number;
+    qtd: number;
+};
 
 type CartCtx = {
     items: CartItem[];
-    count: number;
-    add: (item: Omit<CartItem, 'qty'>, qty?: number) => void;
-    remove: (id: number) => void;
+    add: (item: Omit<CartItem, 'qtd'>, qtd?: number) => void;
+    remove: (idProduto: number) => void;
+    setQty: (idProduto: number, qtd: number) => void;
     clear: () => void;
-    inc: (id: number) => void;
-    dec: (id: number) => void;
-    drawerOpen: boolean;
-    setDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    cartIconRef: React.RefObject<HTMLButtonElement | null>;
+    totalQty: number;
+    totalVenda: number;
 };
 
-const Ctx = createContext<CartCtx | undefined>(undefined);
+const Ctx = createContext<CartCtx | null>(null);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [items, setItems] = useState<CartItem[]>([]);
-    const [drawerOpen, setDrawerOpen] = useState(false);
-    const cartIconRef = useRef<HTMLButtonElement | null>(null);
 
-    const add = (item: Omit<CartItem, 'qty'>, qty = 1) => {
+    const add: CartCtx['add'] = (item, qtd = 1) => {
         setItems(prev => {
-            const i = prev.findIndex(p => p.id === item.id);
-            if (i >= 0) {
-                const copy = [...prev];
-                copy[i] = { ...copy[i], qty: copy[i].qty + qty };
-                return copy;
+            const ix = prev.findIndex(p => p.idProduto === item.idProduto);
+            if (ix >= 0) {
+                const next = [...prev];
+                next[ix] = { ...next[ix], qtd: next[ix].qtd + qtd };
+                return next;
             }
-            return [...prev, { ...item, qty }];
+            return [...prev, { ...item, qtd }];
         });
     };
-    const remove = (id: number) => setItems(prev => prev.filter(p => p.id !== id));
+
+    const remove = (idProduto: number) => {
+        setItems(prev => prev.filter(p => p.idProduto !== idProduto));
+    };
+
+    const setQty = (idProduto: number, qtd: number) => {
+        setItems(prev => prev.map(p => p.idProduto === idProduto ? { ...p, qtd: Math.max(0, qtd) } : p)
+            .filter(p => p.qtd > 0));
+    };
+
     const clear = () => setItems([]);
 
-    const count = items.reduce((s, p) => s + p.qty, 0);
+    const totalQty = useMemo(() => items.reduce((a, i) => a + i.qtd, 0), [items]);
+    const totalVenda = useMemo(() => items.reduce((a, i) => a + i.qtd * i.precoVenda, 0), [items]);
 
-    const inc = (id: number) =>
-        setItems(prev => prev.map(p => (p.id === id ? { ...p, qty: p.qty + 1 } : p)));
-
-    const dec = (id: number) =>
-        setItems(prev =>
-            prev
-                .map(p => (p.id === id ? { ...p, qty: Math.max(1, p.qty - 1) } : p))
-        );
-
-    const value = useMemo(
-        () => ({ items, count, add, remove, clear, inc, dec, drawerOpen, setDrawerOpen, cartIconRef }),
-        [items, count, drawerOpen]
-    );
-
+    const value: CartCtx = { items, add, remove, setQty, clear, totalQty, totalVenda };
     return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };
 
 export const useCart = () => {
-    const v = useContext(Ctx);
-    if (!v) throw new Error('useCart deve ser usado dentro do CartProvider');
-    return v;
+    const ctx = useContext(Ctx);
+    if (!ctx) throw new Error('useCart must be used inside <CartProvider>');
+    return ctx;
 };

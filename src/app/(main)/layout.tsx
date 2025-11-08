@@ -9,14 +9,15 @@ import {
     Typography,
     Collapse
 } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 import "../globals.css"
-import {usePathname} from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import {NAV} from "../labels/navbarmodels";
 import {ChevronRight} from "@mui/icons-material";
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import {useState} from "react";
-import {Bold} from "@/app/(main)/home/style";
+import {Bold} from "@/app/(main)/pages/home/style";
 import {CartIcon} from "@/app/cart/CartIcon";
 import {CartProvider} from "@/app/cart/CartProvider";
 
@@ -176,6 +177,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
     const toggleSidebar = () => setOpen(v => !v);
     const isMobile = useMediaQuery('(max-width:799px)', {noSsr: true});
     const [mobileOpen, setMobileOpen] = useState(false);
+    const router = useRouter();
 
     React.useEffect(() => {
         document.body.style.overflow = mobileOpen ? 'hidden' : '';
@@ -232,7 +234,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                 <ListItemButton
                     key={item.key}
                     component={Link}
-                    href={item.href}
+                    href={"/pages" + item.href}
                     onClick={(e) => handleLeafClick(e, item.href)}
                     selected={isActive(item.href)}
                     sx={{
@@ -258,6 +260,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         const active = hasActive(item);
 
         return (
+
             <Box key={item.key}>
                 <ListItemButton
                     onClick={() => toggleGroup(item.key)}
@@ -293,9 +296,12 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         );
     };
 
+    const logout = () => {
+        localStorage.removeItem('token');
+        router.push('/firstpage');
+    }
+
     return (
-        <html lang="pt-BR">
-        <body>
         <Root>
             <CartProvider>
 
@@ -319,9 +325,16 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                         <Avatar sx={{width: 36, height: 36}}>N</Avatar>
                         {open && (
                             <Box>
-                                <Box sx={{fontWeight: 600, fontSize: 14}}>Usuário</Box>
-                                <Box sx={{color: 'text.secondary', fontSize: 12}}>email@exemplo.com</Box>
+                                <Typography sx={{fontWeight: 600, fontSize: 14}}>Usuário</Typography>
+                                <Typography sx={{color: 'text.secondary', fontSize: 12}}>email@exemplo.com</Typography>
                             </Box>
+                        )}
+                    </Box>
+                    <Box p={2} display="flex" alignItems="center" gap={1}>
+                        {open ? (
+                            <Button onClick={logout} sx={{color: 'red', display: 'flex', gap: '15px', borderRadius: '24px', width: '140px','&:hover':{background: 'rgba(180, 0, 0, 0.07)'}}}><LogoutIcon/>Deslogar</Button>
+                        ) : (
+                            <LogoutIcon sx={{color: 'red', display: 'flex', justifyContent: 'center', width: '100%' }}/>
                         )}
                     </Box>
                 </Sidebar>
@@ -347,7 +360,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                                         </Box>
                                     )}
                                     <Box pr='30px'>
-                                        <CartIcon/>
+                                        <CartIcon />
                                     </Box>
                                 </HeaderInner>
                             </Toolbar>
@@ -360,9 +373,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                     </Shell>
                 </BoxArea>
             </CartProvider>
-
         </Root>
-        </body>
-        </html>
-    );
+    )
+        ;
 }

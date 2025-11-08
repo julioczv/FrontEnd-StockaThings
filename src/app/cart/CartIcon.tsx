@@ -1,18 +1,22 @@
 // CartIcon.tsx
 'use client';
-import React, {useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
-    Badge, Drawer, IconButton, List, Box, Typography, styled, Stack, TextField,
-    Button
+    Badge, Drawer, IconButton, List, Box, Typography, styled, Stack, TextField, MenuItem, Autocomplete, CircularProgress
 } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
-import Remove from '@mui/icons-material/Remove';
-import Add from '@mui/icons-material/Add';
-import Close from '@mui/icons-material/Close';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import AddIcon from "@mui/icons-material/Add";
+import Close from '@mui/icons-material/Close';
 import ButtonProp from "@/app/components/buttons/buttonprop";
+import { api } from '@/app/interceptor/api';
+import {createSale, getPaymentMethod} from '@/app/(main)/pages/vendas/service';
+import toast from 'react-hot-toast';
+import {useCart} from "@/app/cart/CartProvider";
+import type {IPaymentMethod} from "@/app/domain/models/dto/ISales";
+
+
 
 const ModalRight = styled(Drawer)`
     .MuiPaper-root {
@@ -25,15 +29,6 @@ const ModalRight = styled(Drawer)`
 
         }
     }
-`;
-
-const ItemRow = styled('div')`
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #F1F5F9;
 `;
 
 const InputQty = styled(TextField)`
@@ -90,93 +85,157 @@ export const FooterModal = styled(Box)`
 `;
 
 
+
 export const CartIcon: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [qty, setQty] = useState(1);
+    const { items, totalQty, totalVenda, add, remove, setQty, clear } = useCart();
+    const [paymentMethods, setPaymentMethods] = useState<IPaymentMethod[]>([]);
+    const [paymentLoading, setPaymentLoading] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState<IPaymentMethod | null>(null);
+    const [payId, setPayId] = useState<number | null>(null);
 
-    const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = Number(e.target.value);
-        if (newValue < 1 || isNaN(newValue)) {
-            setQty(0);
-        } else {
-            setQty(newValue);
+
+    const incr = (id: number) => {
+        const it = items.find(i => i.idProduto === id);
+        if (it) setQty(id, it.qtd + 1);
+    };
+    const dec = (id: number) => {
+        const it = items.find(i => i.idProduto === id);
+        if (it) setQty(id, Math.max(0, it.qtd - 1));
+    };
+
+    const handleLaunchSale = async () => {
+        if (items.length === 0) {
+            toast.error('Carrinho vazio.');
+            return;
+        }
+        if (!payId) {
+            toast.error('Selecione o método de pagamento.');
+            return;
+        }
+        try {
+            const payload = {
+                tipoPagamentoId: payId,
+                items: items.map(i => ({ idProduto: i.idProduto, qtd: i.qtd })),
+            };
+            const resp = await createSale(api, payload);
+            toast.success(`Venda #${resp.idVenda} lançada!`);
+            clear();
+            setDrawerOpen(false);
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message ?? 'Erro ao lançar venda.');
         }
     };
 
-    const incr = () => {
-        setQty(prev => prev + 1);
-    }
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                setPaymentLoading(true);
+                const data = await getPaymentMethod(api);
+                if (alive) setPaymentMethods(Array.isArray(data) ? data : []);
+            } catch (err) {
+                console.error('Erro ao buscar métodos de pagamento:', err);
+            } finally {
+                if (alive) setPaymentLoading(false);
+            }
+        })();
+        return () => { alive = false; };
+    }, []);
 
-    const dec = () => {
-        if (qty == 0) {
-            return 0
-        } else {
-            setQty(prev => prev - 1);
-        }
-    }
+    useEffect(() => {
+        setPayId(selectedPayment?.idTipoPagamento ?? null);
+    }, [selectedPayment]);
 
-
+    useEffect(() => {
+        console.log('paymentMethods state:', paymentMethods);
+    }, [paymentMethods]);
     return (
         <>
             <IconButton onClick={() => setDrawerOpen(true)}>
-                <Badge color="primary">
-                    <AddShoppingCartIcon sx={{color: 'var(--primarycolor)'}} fontSize="large"/>
+                <Badge color="primary" badgeContent={totalQty}>
+                    <AddShoppingCartIcon sx={{ color: 'var(--primarycolor)' }} fontSize="large" />
                 </Badge>
             </IconButton>
 
-            <ModalRight
-                anchor="right"
-                open={drawerOpen}
-                onClose={() => setDrawerOpen(false)}
-                sx={{zIndex: (theme) => theme.zIndex.modal + 10}}
-            >
+            <ModalRight anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}
+                        sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" p={3}>
                     <Typography variant="h5" fontWeight={700}>Carrinho</Typography>
                     <IconButton onClick={() => setDrawerOpen(false)}><Close/></IconButton>
                 </Stack>
+
                 <Scroll>
                     <Box padding='0 24px'>
-                        <ShoppingCard direction='row'>
-                            <Box>
-                                <Typography fontWeight={500} variant='body1'>Cerveja Heineken Longnek
-                                    330ml </Typography>
-                                <Typography variant='body2'>Descriçãozinha de cria</Typography>
-                            </Box>
-                            <Box>
-                                <Stack direction='row' alignItems='center' spacing={1}>
-                                    <Stack direction='row' alignItems='center'>
-                                        <IconButton onClick={dec}>
-                                            <HorizontalRuleIcon/>
-                                        </IconButton>
-                                        <InputQty
-                                            type="number"
-                                            value={qty}
-                                            onChange={handleQtyChange}
-                                        />
-                                        <IconButton onClick={incr}>
-                                            <AddIcon/>
+                        {items.map(it => (
+                            <ShoppingCard key={it.idProduto} direction='row'>
+                                <Box>
+                                    <Typography fontWeight={500} variant='body1'>{it.nomeProduto}</Typography>
+                                    <Typography variant='body2'>R$ {it.precoVenda.toFixed(2)}</Typography>
+                                    <Typography variant='body2' pt={1}>{it.descricao}</Typography>
+                                </Box>
+                                <Box>
+                                    <Stack direction='row' alignItems='center' spacing={1}>
+                                        <Stack direction='row' alignItems='center'>
+                                            <IconButton onClick={() => dec(it.idProduto)}><HorizontalRuleIcon/></IconButton>
+                                            <InputQty
+                                                type="number"
+                                                value={it.qtd}
+                                                onChange={(e) => setQty(it.idProduto, Math.max(0, Number(e.target.value) || 0))}
+                                            />
+                                            <IconButton onClick={() => incr(it.idProduto)}>
+                                                <AddIcon/>
+                                            </IconButton>
+                                        </Stack>
+                                        <Box>
+                                            <Typography fontWeight={600}>R$ {(it.qtd * it.precoVenda).toFixed(2)}</Typography>
+                                        </Box>
+                                        <IconButton>
+                                            <DeleteOutline sx={{color: 'red'}}/>
                                         </IconButton>
                                     </Stack>
-                                    <Box>
-                                        <Typography fontWeight={600}>R$ 4.99</Typography>
-                                    </Box>
-                                    <IconButton>
-                                        <DeleteOutline sx={{color: 'red'}}/>
-                                    </IconButton>
-                                </Stack>
-                            </Box>
-                        </ShoppingCard>
+                                </Box>
+                            </ShoppingCard>
+                        ))}
                     </Box>
-
                 </Scroll>
+
                 <FooterModal>
-                    <Stack direction='row' justifyContent="space-between">
+                    <Stack direction='row' justifyContent="space-between" alignItems="center" pb={2}>
                         <Typography fontWeight={500} variant='h5'>Total</Typography>
-                        <Typography variant='h6'>R$ 900.00</Typography>
+                        <Typography variant='h6'>R$ {totalVenda.toFixed(2)}</Typography>
                     </Stack>
-                    <Stack direction='row' spacing={2} justifyContent='end' pt={4}>
-                        <ButtonProp label='Limpar Carrinho' color='red' startIcon={<DeleteOutline/>}/>
-                        <ButtonProp label='Lançar Venda' startIcon={<AddIcon/>}/>
+
+                    <Autocomplete<IPaymentMethod>
+                        options={paymentMethods}
+                        value={selectedPayment}
+                        onChange={(_, v) => setSelectedPayment(v)}
+                        loading={paymentLoading}
+                        getOptionLabel={(opt) => opt?.tipoPagamento ?? ''}
+                        isOptionEqualToValue={(opt, val) => opt.idTipoPagamento === val?.idTipoPagamento}
+                        disablePortal
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Método de Pagamento"
+                                placeholder="Selecione..."
+                                InputProps={{
+                                    ...params.InputProps,
+                                    endAdornment: (
+                                        <>
+                                            {paymentLoading ? <CircularProgress size={20} /> : null}
+                                            {params.InputProps.endAdornment}
+                                        </>
+                                    ),
+                                }}
+                            />
+                        )}
+                        noOptionsText={paymentLoading ? 'Carregando…' : 'Nenhuma opção'}
+                    />
+
+                    <Stack direction='row' spacing={2} justifyContent='end' pt={2}>
+                        <ButtonProp label='Limpar Carrinho' color='red' onClick={clear}/>
+                        <ButtonProp label='Lançar Venda' startIcon={<AddIcon/>} onClick={handleLaunchSale}/>
                     </Stack>
                 </FooterModal>
             </ModalRight>

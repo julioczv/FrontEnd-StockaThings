@@ -139,3 +139,15 @@ export const NewProductDialog = styled(Dialog)`
     }
 `;
 
+export const DeleteModalDialog = styled(Dialog)`
+    .MuiPaper-root {
+        background: white;
+        width: 800px;
+        border-radius: 16px;
+        padding: 24px;
+        @media (max-width: 500px) {
+            
+        }
+    }
+`;
+
