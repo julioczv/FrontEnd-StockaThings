@@ -66,6 +66,7 @@ const Home = () => {
     const [edit, setEdit] = useState<boolean>(true);
     const [openModalDelete, setOpenModalDelete] = useState<boolean>(false);
     const [toDelete, setToDelete] = useState<{ id: number; name: string } | null>(null);
+    const [disabled, setDisabled] = useState<boolean>(false);
 
     const isMobile = useMediaQuery('(max-width:600px)', {noSsr: true});
 
@@ -77,6 +78,8 @@ const Home = () => {
         setOpenModal(true);
         setEdit(false);
     };
+
+
 
     const handleOpenEditProduct = async (idProduto: number) => {
         setSelectedId(idProduto);
@@ -262,6 +265,12 @@ const Home = () => {
         }
     };
 
+    const disabledOption = (data: IProducts) => {
+        if(data.qtdProduto === 0){
+            setDisabled(true)
+        }
+    }
+
     return (
         <ThemeProvider theme={theme}>
             <Toaster position='top-center'/>
@@ -321,49 +330,69 @@ const Home = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredProducts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(item => (
-                                <TableRow key={item.idProduto} hover>
-                                    <TableCell data-label="Código:">{item.idProduto}</TableCell>
-                                    <TableCell data-label="Produto:">{item.nomeProduto}</TableCell>
-                                    <TableCell data-label="Valor de Custo:" align="center">
-                                        R$ {item.valorPagoProduto}
-                                    </TableCell>
-                                    <TableCell data-label="Valor de Venda:" align="center">
-                                        R$ {item.valorVendaProduto}
-                                    </TableCell>
-                                    <TableCell data-label="Quantidade:" align="center" sx={qtySx(item.qtdProduto)}>
-                                        {item.qtdProduto ?? 0}
-                                    </TableCell>
-                                    <TableCell data-label="Ações" className="cell-actions" align="center" width='150px'>
-                                        <Box>
-                                            <IconButton
-                                                sx={{color: 'var(--primarycolor)'}}
-                                                onClick={() => add({
-                                                    idProduto: item.idProduto,
-                                                    nomeProduto: item.nomeProduto ?? '',
-                                                    descricao: item.descricaoProduto ?? '',
-                                                    precoVenda: Number(item.valorVendaProduto),
-                                                    precoCusto: Number(item.valorPagoProduto),
-                                                }, 1)}
-                                                aria-label={`Adicionar ${item.nomeProduto} ao carrinho`}
-                                            >
-                                                <Add/>
-                                            </IconButton>
-                                            <IconButton
-                                                sx={{color: 'var(--primarycolor)'}}
-                                                onClick={() => handleOpenEditProduct(item.idProduto)}
-                                                aria-label={`Editar produto ${item.idProduto}`}
-                                            >
-                                                <VisibilityOutlinedIcon/>
-                                            </IconButton>
-                                            <IconButton sx={{color: 'var(--primarycolor)'}}
-                                                        onClick={() => handleOpenModalDelete(item.idProduto)}>
-                                                <Trash/>
-                                            </IconButton>
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {filteredProducts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(item => {
+                                const outOfStock = (item.qtdProduto ?? 0) <= 0;
+
+                                return (
+                                    <TableRow key={item.idProduto} hover>
+                                        <TableCell data-label="Código:">{item.idProduto}</TableCell>
+                                        <TableCell data-label="Produto:">{item.nomeProduto}</TableCell>
+                                        <TableCell data-label="Valor de Custo:" align="center">
+                                            R$ {item.valorPagoProduto}
+                                        </TableCell>
+                                        <TableCell data-label="Valor de Venda:" align="center">
+                                            R$ {item.valorVendaProduto}
+                                        </TableCell>
+                                        <TableCell data-label="Quantidade:" align="center" sx={qtySx(item.qtdProduto)}>
+                                            {item.qtdProduto ?? 0}
+                                        </TableCell>
+
+                                        <TableCell data-label="Ações" className="cell-actions" align="center" width="150px">
+                                            <Box>
+                                                <IconButton
+                                                    sx={{
+                                                        color: outOfStock ? 'action.disabled' : 'var(--primarycolor)',
+                                                    }}
+                                                    disabled={outOfStock}
+                                                    onClick={() => {
+                                                        if (outOfStock) return;
+                                                        add(
+                                                            {
+                                                                idProduto: item.idProduto,
+                                                                nomeProduto: item.nomeProduto ?? '',
+                                                                descricao: item.descricaoProduto ?? '',
+                                                                precoVenda: Number(item.valorVendaProduto),
+                                                                precoCusto: Number(item.valorPagoProduto),
+                                                            },
+                                                            1
+                                                        );
+                                                    }}
+                                                    aria-label={`Adicionar ${item.nomeProduto} ao carrinho`}
+                                                    title={outOfStock ? 'Sem estoque' : 'Adicionar ao carrinho'}
+                                                >
+                                                    <Add />
+                                                </IconButton>
+
+                                                <IconButton
+                                                    sx={{ color: 'var(--primarycolor)' }}
+                                                    onClick={() => handleOpenEditProduct(item.idProduto)}
+                                                    aria-label={`Editar produto ${item.idProduto}`}
+                                                >
+                                                    <VisibilityOutlinedIcon />
+                                                </IconButton>
+
+                                                <IconButton
+                                                    sx={{ color: 'var(--primarycolor)' }}
+                                                    onClick={() => handleOpenModalDelete(item.idProduto)}
+                                                >
+                                                    <Trash />
+                                                </IconButton>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+
                         </TableBody>
                     </Table>
 

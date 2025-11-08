@@ -17,9 +17,6 @@ import {useCart} from "@/app/cart/CartProvider";
 import type {IPaymentMethod} from "@/app/domain/models/dto/ISales";
 
 
-interface ICartProps {
-    tipoDoPagamento: IPaymentMethod[];
-}
 
 const ModalRight = styled(Drawer)`
     .MuiPaper-root {
@@ -89,12 +86,11 @@ export const FooterModal = styled(Box)`
 
 
 
-export const CartIcon: React.FC<ICartProps> = ({tipoDoPagamento}) => {
+export const CartIcon: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const { items, totalQty, totalVenda, add, remove, setQty, clear } = useCart();
     const [paymentMethods, setPaymentMethods] = useState<IPaymentMethod[]>([]);
     const [paymentLoading, setPaymentLoading] = useState(false);
-    const [paymentError, setPaymentError] = useState<string | null>(null);
     const [selectedPayment, setSelectedPayment] = useState<IPaymentMethod | null>(null);
     const [payId, setPayId] = useState<number | null>(null);
 

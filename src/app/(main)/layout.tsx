@@ -360,7 +360,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                                         </Box>
                                     )}
                                     <Box pr='30px'>
-                                        <CartIcon/>
+                                        <CartIcon />
                                     </Box>
                                 </HeaderInner>
                             </Toolbar>
